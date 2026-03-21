@@ -1,14 +1,11 @@
 {
   "name": "nightscore",
   "version": "1.0.0",
-  "lockfileVersion": 3,
-  "requires": true,
   "private": true,
   "workspaces": [
     "contract",
     "nightscore-cli"
   ],
-  "packages": {},
   "scripts": {
     "build": "npm run build --workspaces"
   }
