@@ -4,23 +4,27 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "preprod": "node --loader ts-node/esm src/index.ts preprod",
+    "preprod": "tsx src/index.ts preprod",
     "preprod-ps": "docker compose -f proof-server.yml up -d && npm run preprod",
-    "preview": "node --loader ts-node/esm src/index.ts preview",
-    "preview-ps": "docker compose -f proof-server.yml up -d && npm run preview"
+    "preview": "tsx src/index.ts preview",
+    "preview-ps": "docker compose -f proof-server.yml up -d && npm run preview",
+    "start-proof-server": "docker run -p 6300:6300 midnightntwrk/proof-server:7.0.0 -- midnight-proof-server -v"
   },
   "dependencies": {
-    "@midnight-ntwrk/compact-runtime": "^3.0.0",
-    "@midnight-ntwrk/midnight-js-contracts": "^3.0.0",
-    "@midnight-ntwrk/midnight-js-types": "^3.0.0",
-    "@midnight-ntwrk/midnight-js-network-id": "^3.0.0",
-    "@midnight-ntwrk/midnight-js-node-indexer-provider": "^3.0.0",
-    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "^3.0.0",
-    "@midnight-ntwrk/midnight-js-wallet": "^3.0.0",
-    "@midnight-ntwrk/wallet-api": "^3.0.0"
+    "@midnight-ntwrk/compact-runtime": "0.14.0",
+    "@midnight-ntwrk/ledger": "^4.0.0",
+    "@midnight-ntwrk/midnight-js-contracts": "3.0.0",
+    "@midnight-ntwrk/midnight-js-http-client-proof-provider": "3.0.0",
+    "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "3.0.0",
+    "@midnight-ntwrk/midnight-js-level-private-state-provider": "3.0.0",
+    "@midnight-ntwrk/midnight-js-network-id": "3.0.0",
+    "@midnight-ntwrk/midnight-js-node-zk-config-provider": "3.0.0",
+    "@midnight-ntwrk/midnight-js-types": "3.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.4.5",
-    "ts-node": "^10.9.2"
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   }
 }
