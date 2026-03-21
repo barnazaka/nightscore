@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "file": "index.js",
+  "sourceRoot": "../../",
+  "sources": ["src/nightscore.compact"],
+  "names": [],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EAAA;;;;;;;;;;;;;;;;;;;;;;MAuCA,AAAA,gBAOC;;;;;cAP+B,UAA4B;;;;;;;;;;;;;;;;;;yCAA5B,UAA4B;;;;;;;;;kDAA5B,UAA4B;;;OAO3D;MAED,AAAA,aAEC;;;;;cAF4B,UAA4B;;;;;;;;;;;;;;;;;;yCAA5B,UAA4B;;;;;;;;;+CAA5B,UAA4B;;;OAExD;;;;;;GACA;EAnDD;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;IAWA;;;;;;;;;;yEAA2D;;;;;;;GAwC1D;EAtCD,AAAA,oBAAsC;;0DAAtC,iBAAsC;;;;;;;;;;;;;;GAAA;EACtC,AAAA,kBAAoC;;0DAApC,eAAoC;;;;;;;;;;;;;;GAAA;EACpC,AAAA,iBAAmC;;0DAAnC,cAAmC;;;;;;;;;;;;;;GAAA;EACnC,AAAA,eAAgC;;0DAAhC,YAAgC;;;;;;;;;;;;;;GAAA;EAEhC,AAAA,cAmBC,CAlBC,YAAoB,EACpB,WAAmB,EACnB,WAAmB,EACnB,aAAoB;QAEhB,aAAW;;;UAGX,YAAU,WAAU,WAAS,YAAW,WAAS;;;YAGjD,YAAU,WAAU,WAAS,YAAW,WAAS;;;;cAGjD,YAAU,UAAS,WAAS,WAAU,WAAS;;;;;;;;;GAIpD;EAED,AAAA,mBAOC,4BAP+B,UAA4B;UACpD,YAAgC;UAChC,KAAuB;UACvB,QAAyB;UACzB,aAA4B;UAC5B,MAAwD,uBAArC,YAAU;uCAAE,KAAG;uCAAE,QAAM;uCAAE,aAAW;IAC7D;;;;;;;;;;2HAA+B,UAAQ;;;2HAAY,MAAI;;;wEAAzC;;GACf;EAED,AAAA,gBAEC,4BAF4B,UAA4B;mCACvC;;;;;;;;;;;;;;8HAA+B,UAAQ;;;wGAAzB;GAC/B;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;"
+}

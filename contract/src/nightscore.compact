@@ -1,9 +1,7 @@
-pragma language_version 0.22;
+pragma language_version 0.20.0;
 
 import CompactStandardLibrary;
 
-// Credit tiers that get written to the public ledger
-// DeFi protocols read this to make lending decisions
 enum CreditTier {
   UNQUALIFIED,
   BRONZE,
@@ -11,51 +9,43 @@ enum CreditTier {
   GOLD
 }
 
-// Public ledger state - any DeFi protocol on Midnight can read this
 ledger creditRegistry: Map<ZswapCoinPublicKey, CreditTier>;
 
-// Private witnesses - the borrower's real financial data
-// These NEVER touch the ledger or leave the client
 witness onChainRepayments(): Uint<32>;
 witness walletAgeInDays(): Uint<32>;
 witness totalVolumeUSD(): Uint<64>;
 witness defaultCount(): Uint<8>;
 
-// Pure circuit: computes tier from private inputs
-// This is what the ZK proof is generated against
 circuit computeTier(
   repayments: Uint<32>,
   ageInDays: Uint<32>,
   volumeUSD: Uint<64>,
-  defaults: Uint<8>
+  numDefaults: Uint<8>
 ): CreditTier {
-  if defaults > 2 {
+  if (numDefaults > 2) {
     return CreditTier.UNQUALIFIED;
   }
-  if repayments >= 20 && ageInDays >= 365 && volumeUSD >= 50000 {
+  if (repayments >= 20 && ageInDays >= 365 && volumeUSD >= 50000) {
     return CreditTier.GOLD;
   }
-  if repayments >= 10 && ageInDays >= 180 && volumeUSD >= 10000 {
+  if (repayments >= 10 && ageInDays >= 180 && volumeUSD >= 10000) {
     return CreditTier.SILVER;
   }
-  if repayments >= 3 && ageInDays >= 30 && volumeUSD >= 1000 {
+  if (repayments >= 3 && ageInDays >= 30 && volumeUSD >= 1000) {
     return CreditTier.BRONZE;
   }
   return CreditTier.UNQUALIFIED;
 }
 
-// Public circuit: write a ZK-proven credit attestation to the ledger
-// The actual financial data is proven privately, only the tier is public
 export circuit attestCreditTier(borrower: ZswapCoinPublicKey): [] {
   const repayments = onChainRepayments();
   const age = walletAgeInDays();
   const volume = totalVolumeUSD();
-  const defaults = defaultCount();
-  const tier = computeTier(repayments, age, volume, defaults);
-  creditRegistry.insert(borrower, tier);
+  const numDefaults = defaultCount();
+  const tier = computeTier(repayments, age, volume, numDefaults);
+  creditRegistry.insert(disclose(borrower), disclose(tier));
 }
 
-// Public read: any protocol can verify a borrower's tier
 export circuit getCreditTier(borrower: ZswapCoinPublicKey): CreditTier {
-  return creditRegistry.lookup(borrower);
+  return disclose(creditRegistry.lookup(disclose(borrower)));
 }

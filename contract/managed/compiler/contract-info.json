@@ -1,0 +1,103 @@
+{
+  "circuits": [
+    {
+      "name": "attestCreditTier",
+      "pure": false,
+      "arguments": [
+        {
+          "name": "borrower",
+          "type": {
+            "type-name": "Struct",
+            "name": "ZswapCoinPublicKey",
+            "elements": [
+              {
+                "name": "bytes",
+                "type": {
+                  "type-name": "Bytes",
+                  "length": 32
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "getCreditTier",
+      "pure": false,
+      "arguments": [
+        {
+          "name": "borrower",
+          "type": {
+            "type-name": "Struct",
+            "name": "ZswapCoinPublicKey",
+            "elements": [
+              {
+                "name": "bytes",
+                "type": {
+                  "type-name": "Bytes",
+                  "length": 32
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Enum",
+        "name": "CreditTier",
+        "elements": [
+          "UNQUALIFIED",
+          "BRONZE",
+          "SILVER",
+          "GOLD"
+        ]
+      }
+    }
+  ],
+  "witnesses": [
+    {
+      "name": "onChainRepayments",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Uint",
+        "maxval": 4294967295
+      }
+    },
+    {
+      "name": "walletAgeInDays",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Uint",
+        "maxval": 4294967295
+      }
+    },
+    {
+      "name": "totalVolumeUSD",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Uint",
+        "maxval": 18446744073709551615
+      }
+    },
+    {
+      "name": "defaultCount",
+      "arguments": [
+      ],
+      "result type": {
+        "type-name": "Uint",
+        "maxval": 255
+      }
+    }
+  ],
+  "contracts": [
+  ]
+}
