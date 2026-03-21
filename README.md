@@ -25,13 +25,15 @@ Using Midnight's ZK proof architecture:
 5. Any DeFi protocol on Midnight can read the public attestation and
    offer undercollateralized loans accordingly
 
+![NightScore circuits compiled](pic/Screenshot%202026-03-21%20at%2011.35.31.png)
+
 ## Credit Tiers
 
-| Tier | Repayments | Wallet Age | Volume | Max Loan |
-|------|-----------|------------|--------|----------|
-| Bronze | 3+ | 30+ days | $1K+ | $500 |
-| Silver | 10+ | 180+ days | $10K+ | $5,000 |
-| Gold | 20+ | 365+ days | $50K+ | $50,000 |
+| Tier   | Repayments | Wallet Age  | Volume | Max Loan |
+|--------|-----------|-------------|--------|----------|
+| Bronze | 3+        | 30+ days    | $1K+   | $500     |
+| Silver | 10+       | 180+ days   | $10K+  | $5,000   |
+| Gold   | 20+       | 365+ days   | $50K+  | $50,000  |
 
 ## What Makes This Different
 
@@ -45,21 +47,33 @@ entirely. The proof IS the assessment.
 ### Prerequisites
 - Node.js v22.15+
 - Docker with docker compose
-- Compact devtools: `curl ... | sh && compact update 0.28.0`
+- Compact devtools:
+```bash
+  curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
+  source $HOME/.local/bin/env
+  compact update 0.28.0
+```
 
 ### Install
+```bash
 npm install
+```
 
 ### Build the contract
+```bash
 cd contract
-npm run compact && npm run build
+npm run compact
+```
 
-### Run on Preprod
+### Run the CLI
+```bash
 cd nightscore-cli
-npm run preprod-ps
+npx tsx src/index.ts
+```
+
+![NightScore CLI output](pic/Screenshot%202026-03-21%20at%2011.39.06.png)
 
 ## Built With
 - Midnight Network SDK (midnight-js)
 - Compact smart contract language
-- ZK proof generation via Midnight proof server
-```
+- ZK proof generation via the Midnight proof server
