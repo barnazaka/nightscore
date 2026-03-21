@@ -1,7 +1,6 @@
 import readline from 'readline';
-import { deployNightScore, joinNightScore } from './managed-api.js';
-import { CreditProfile } from './witnesses.js';
-import { buildProviders } from './providers.js';
+import { createWitnesses, DEFAULT_CREDIT_PROFILE, CreditProfile } from './witnesses.js';
+import { Contract } from '../../contract/managed/contract/index.js';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -25,13 +24,13 @@ async function collectCreditProfile(): Promise<CreditProfile> {
   const repayments = parseInt(await prompt('  On-chain loan repayments completed: '));
   const age = parseInt(await prompt('  Wallet age in days: '));
   const volume = parseInt(await prompt('  Total on-chain volume (USD): '));
-  const defaults = parseInt(await prompt('  Number of past defaults/liquidations: '));
+  const numDefaults = parseInt(await prompt('  Number of past defaults/liquidations: '));
 
   return {
     onChainRepayments: repayments,
     walletAgeInDays: age,
     totalVolumeUSD: volume,
-    defaultCount: defaults,
+    defaultCount: numDefaults,
   };
 }
 
@@ -42,47 +41,20 @@ async function main() {
   console.log('  ║   Privacy-Preserving Credit Attestation   ║');
   console.log('  ╚══════════════════════════════════════════╝');
   console.log('');
-  console.log('  [1] Attest my credit tier to the ledger');
-  console.log('  [2] Check an address credit tier');
-  console.log('  [3] Exit');
+
+  const profile = await collectCreditProfile();
+  const witnesses = createWitnesses(profile);
+  const contract = new Contract(witnesses);
+
+  console.log('\n  Contract instantiated with your private credit profile.');
+  console.log('  Witnesses wired. Ready to connect to Midnight network.\n');
+  console.log('  Credit profile loaded:');
+  console.log(`    Repayments:  ${profile.onChainRepayments}`);
+  console.log(`    Wallet age:  ${profile.walletAgeInDays} days`);
+  console.log(`    Volume:      $${profile.totalVolumeUSD}`);
+  console.log(`    Defaults:    ${profile.defaultCount}`);
   console.log('');
-
-  const choice = await prompt('  Choose: ');
-
-  const providers = await buildProviders();
-
-  if (choice === '1') {
-    const profile = await collectCreditProfile();
-    const contractAddress = await prompt('\n  Contract address (leave blank to deploy new): ');
-
-    let deployed;
-    if (contractAddress.trim() === '') {
-      console.log('\n  Deploying NightScore contract...');
-      deployed = await deployNightScore(providers, profile);
-      console.log(`\n  Contract deployed at: ${deployed.deployTxData.public.contractAddress}`);
-    } else {
-      deployed = await joinNightScore(providers, contractAddress.trim(), profile);
-    }
-
-    const borrowerKey = await prompt('\n  Your public key: ');
-    console.log('\n  Generating ZK proof of creditworthiness...');
-    console.log('  (Your actual financial data stays on this device)\n');
-
-    await deployed.callTx.attestCreditTier(borrowerKey);
-
-    console.log('  ✓ Credit attestation written to Midnight ledger');
-    console.log('  ✓ Any DeFi protocol can now verify your tier');
-    console.log('  ✓ Your raw financial data was never exposed\n');
-
-  } else if (choice === '2') {
-    const contractAddress = await prompt('\n  Contract address: ');
-    const profile = { onChainRepayments: 0, walletAgeInDays: 0, totalVolumeUSD: 0, defaultCount: 0 };
-    const deployed = await joinNightScore(providers, contractAddress, profile);
-    const borrowerKey = await prompt('  Borrower public key to check: ');
-
-    const tier = await deployed.callTx.getCreditTier(borrowerKey);
-    console.log(`\n  Credit Tier: ${TIER_LABELS[Number(tier)] ?? 'Unknown'}\n`);
-  }
+  console.log('  Your raw data stays here. Only the ZK proof goes on-chain.\n');
 
   rl.close();
 }
