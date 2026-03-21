@@ -1,1 +1,26 @@
-
+{
+  "name": "@nightscore/cli",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preprod": "node --loader ts-node/esm src/index.ts preprod",
+    "preprod-ps": "docker compose -f proof-server.yml up -d && npm run preprod",
+    "preview": "node --loader ts-node/esm src/index.ts preview",
+    "preview-ps": "docker compose -f proof-server.yml up -d && npm run preview"
+  },
+  "dependencies": {
+    "@midnight-ntwrk/compact-runtime": "^3.0.0",
+    "@midnight-ntwrk/midnight-js-contracts": "^3.0.0",
+    "@midnight-ntwrk/midnight-js-types": "^3.0.0",
+    "@midnight-ntwrk/midnight-js-network-id": "^3.0.0",
+    "@midnight-ntwrk/midnight-js-node-indexer-provider": "^3.0.0",
+    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "^3.0.0",
+    "@midnight-ntwrk/midnight-js-wallet": "^3.0.0",
+    "@midnight-ntwrk/wallet-api": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "ts-node": "^10.9.2"
+  }
+}
