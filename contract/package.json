@@ -1,0 +1,14 @@
+{
+  "name": "@nightscore/contract",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compact": "compact compile src/nightscore.compact --output managed",
+    "build": "tsc",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
