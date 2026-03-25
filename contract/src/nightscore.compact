@@ -1,4 +1,4 @@
-pragma language_version 0.20.0;
+pragma language_version 0.16.0;
 
 import CompactStandardLibrary;
 
@@ -9,7 +9,7 @@ enum CreditTier {
   GOLD
 }
 
-ledger creditRegistry: Map<ZswapCoinPublicKey, CreditTier>;
+export ledger creditRegistry: Map<ZswapCoinPublicKey, CreditTier>;
 
 witness onChainRepayments(): Uint<32>;
 witness walletAgeInDays(): Uint<32>;
