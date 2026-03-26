@@ -17,7 +17,7 @@ import {
 
 async function main() {
   console.log('\n╔══════════════════════════════════════════════════════════╗');
-  console.log('║        Deploy NightScore to Midnight Preprod             ║');
+  console.log('║        Deploy NightScore to Midnight Preview             ║');
   console.log('╚══════════════════════════════════════════════════════════╝\n');
 
   if (!fs.existsSync(path.join(zkConfigPath, 'contract', 'index.js'))) {
@@ -30,17 +30,20 @@ async function main() {
   try {
     console.log('─── Step 1: Wallet Setup ──────────────────────────────────────\n');
     const choice = await rl.question('  [1] Create new wallet\n  [2] Restore from seed\n  > ');
+    
+    // Generate a new seed or use provided one
     const seed = choice.trim() === '2'
       ? await rl.question('\n  Enter your 64-character seed: ')
       : toHex(Buffer.from(generateRandomSeed()));
 
     if (choice.trim() !== '2') {
-      console.log(`\n  ⚠️  SAVE THIS SEED:\n  ${seed}\n`);
+      console.log(`\n  ⚠️  SAVE THIS SEED (Required for interactions):\n  ${seed}\n`);
     }
 
     console.log('  Creating wallet...');
     const walletCtx = await createWallet(seed);
-    console.log('  Syncing with network...');
+    
+    console.log('  Syncing with Preview network...');
     const state = await Rx.firstValueFrom(
       walletCtx.wallet.state().pipe(
         Rx.throttleTime(5000),
@@ -50,14 +53,17 @@ async function main() {
 
     const address = walletCtx.unshieldedKeystore.getBech32Address();
     const balance = (state as any).unshielded.balances[unshieldedToken().raw] ?? 0n;
+    
     console.log(`\n  Wallet Address: ${address}`);
     console.log(`  Balance: ${balance.toLocaleString()} tNight\n`);
 
     if (balance === 0n) {
       console.log('─── Step 2: Fund Your Wallet ──────────────────────────────────\n');
-      console.log('  Visit: https://faucet.preprod.midnight.network/');
+      // Updated to Preview Faucet
+      console.log('  Visit: https://faucet.preview.midnight.network/');
       console.log(`  Address: ${address}\n`);
-      console.log('  Waiting for funds...');
+      console.log('  Waiting for funds (this may take a minute)...');
+      
       await Rx.firstValueFrom(
         walletCtx.wallet.state().pipe(
           Rx.throttleTime(10000),
@@ -73,6 +79,8 @@ async function main() {
     const dustState = await Rx.firstValueFrom(
       walletCtx.wallet.state().pipe(Rx.filter((s: any) => s.isSynced))
     );
+    
+    // Check if DUST is needed for shielded transactions
     if ((dustState as any).dust.walletBalance(new Date()) === 0n) {
       const nightUtxos = (dustState as any).unshielded.availableCoins.filter(
         (c: any) => !c.meta?.registeredForDustGeneration
@@ -89,7 +97,8 @@ async function main() {
           await walletCtx.wallet.finalizeRecipe(recipe)
         );
       }
-      console.log('  Waiting for DUST tokens...');
+      
+      console.log('  Waiting for DUST tokens to be minted...');
       await Rx.firstValueFrom(
         walletCtx.wallet.state().pipe(
           Rx.throttleTime(5000),
@@ -104,6 +113,7 @@ async function main() {
     const providers = await createProviders(walletCtx);
     const { compiledContract } = await loadContract();
 
+    console.log('  Submitting deployment transaction...');
     const deployed = await deployContract(providers, {
       compiledContract,
       privateStateId: 'nightscoreState',
@@ -112,13 +122,25 @@ async function main() {
     } as any);
 
     const contractAddress = (deployed as any).deployTxData.public.contractAddress;
-    console.log(`  ✅ Contract deployed: ${contractAddress}\n`);
+    console.log(`\n  ✅ Contract successfully deployed!`);
+    console.log(`  📍 Address: ${contractAddress}\n`);
 
-    fs.writeFileSync('deployment.json', JSON.stringify({ contractAddress, seed, network: 'preprod' }, null, 2));
+    // Save deployment info for use in interact.ts
+    fs.writeFileSync('deployment.json', JSON.stringify({ 
+      contractAddress, 
+      seed, 
+      network: 'preview',
+      deployedAt: new Date().toISOString()
+    }, null, 2));
 
     await walletCtx.wallet.stop();
+    console.log('  Wallet stopped. Deployment complete.');
+  } catch (error) {
+    console.error('\n  ❌ Deployment failed:');
+    console.error(error);
   } finally {
     rl.close();
   }
 }
+
 main().catch(console.error);

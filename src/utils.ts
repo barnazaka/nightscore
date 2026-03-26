@@ -21,14 +21,17 @@ import {
 } from '@midnight-ntwrk/wallet-sdk-unshielded-wallet';
 import * as contracts from '@midnight-ntwrk/midnight-js-contracts';
 
-setNetworkId('preprod');
+// 1. Updated from 'preprod' to 'preview'
+setNetworkId('preview');
+
 // @ts-expect-error Required for wallet sync
 globalThis.WebSocket = WebSocket;
 
+// 2. Updated all URLs to point to the Preview network
 export const CONFIG = {
-  indexer: 'https://indexer.preprod.midnight.network/api/v3/graphql',
-  indexerWS: 'wss://indexer.preprod.midnight.network/api/v3/graphql/ws',
-  node: 'https://rpc.preprod.midnight.network',
+  indexer: 'https://indexer.preview.midnight.network/api/v3/graphql',
+  indexerWS: 'wss://indexer.preview.midnight.network/api/v3/graphql/ws',
+  node: 'https://rpc.preview.midnight.network',
   proofServer: 'http://127.0.0.1:6300',
 };
 
@@ -75,9 +78,6 @@ export async function createWallet(seed: string) {
     relayURL: new URL(CONFIG.node.replace(/^http/, 'ws')),
   };
 
-  // Use WalletFacade.init() - this is the correct API.
-  // It handles submissionService, pendingTransactionsService,
-  // and provingService automatically from the config.
   const wallet = await (WalletFacade as any).init({
     configuration: walletConfig,
     shielded: (config: any) =>
