@@ -75,31 +75,30 @@ export async function createWallet(seed: string) {
     relayURL: new URL(CONFIG.node.replace(/^http/, 'ws')),
   };
 
-  // Hold reference to builder object, call start separately
-  const shieldedWallet = ShieldedWallet(walletConfig);
-  await shieldedWallet.startWithSecretKeys(shieldedSecretKeys);
-
-  const unshieldedWallet = UnshieldedWallet({
-    networkId,
-    indexerClientConnection: walletConfig.indexerClientConnection,
-    txHistoryStorage: new InMemoryTransactionHistoryStorage(),
+  // Use WalletFacade.init() - this is the correct API.
+  // It handles submissionService, pendingTransactionsService,
+  // and provingService automatically from the config.
+  const wallet = await (WalletFacade as any).init({
+    configuration: walletConfig,
+    shielded: (config: any) =>
+      ShieldedWallet(config).startWithSecretKeys(shieldedSecretKeys),
+    unshielded: (config: any) =>
+      UnshieldedWallet({
+        ...config,
+        txHistoryStorage: new InMemoryTransactionHistoryStorage(),
+      }).startWithPublicKey(PublicKey.fromKeyStore(unshieldedKeystore)),
+    dust: (config: any) =>
+      DustWallet({
+        ...config,
+        costParameters: {
+          additionalFeeOverhead: 300_000_000_000_000n,
+          feeBlocksMargin: 5,
+        },
+      }).startWithSecretKey(
+        dustSecretKey,
+        ledger.LedgerParameters.initialParameters().dust
+      ),
   });
-  await unshieldedWallet.startWithPublicKey(PublicKey.fromKeyStore(unshieldedKeystore));
-
-  const dustWallet = DustWallet({
-    ...walletConfig,
-    costParameters: {
-      additionalFeeOverhead: 300_000_000_000_000n,
-      feeBlocksMargin: 5,
-    },
-  });
-  await dustWallet.startWithSecretKey(
-    dustSecretKey,
-    ledger.LedgerParameters.initialParameters().dust
-  );
-
-  const wallet = new (WalletFacade as any)(shieldedWallet, unshieldedWallet, dustWallet);
-  await wallet.start(shieldedSecretKeys, dustSecretKey);
 
   return { wallet, shieldedSecretKeys, dustSecretKey, unshieldedKeystore };
 }
