@@ -2,7 +2,6 @@ import { setNetworkId, getNetworkId } from '@midnight-ntwrk/midnight-js-network-
 import { WebSocket } from 'ws';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import * as Rx from 'rxjs';
 import { Buffer } from 'buffer';
 import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client-proof-provider';
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
@@ -21,17 +20,15 @@ import {
 } from '@midnight-ntwrk/wallet-sdk-unshielded-wallet';
 import * as contracts from '@midnight-ntwrk/midnight-js-contracts';
 
-// 1. Updated from 'preprod' to 'preview'
-setNetworkId('preview');
+setNetworkId('preprod');
 
-// @ts-expect-error Required for wallet sync
+// @ts-expect-error Required for wallet sync in Node.js
 globalThis.WebSocket = WebSocket;
 
-// 2. Updated all URLs to point to the Preview network
 export const CONFIG = {
-  indexer: 'https://indexer.preview.midnight.network/api/v3/graphql',
-  indexerWS: 'wss://indexer.preview.midnight.network/api/v3/graphql/ws',
-  node: 'https://rpc.preview.midnight.network',
+  indexer: 'https://indexer.preprod.midnight.network/api/v3/graphql',
+  indexerWS: 'wss://indexer.preprod.midnight.network/api/v3/graphql/ws',
+  node: 'https://rpc.preprod.midnight.network',
   proofServer: 'http://127.0.0.1:6300',
 };
 
@@ -137,9 +134,8 @@ export function signTransactionIntents(tx: any, signFn: any, proofMarker: any): 
 }
 
 export async function createProviders(walletCtx: any) {
-  const state = await Rx.firstValueFrom(
-    walletCtx.wallet.state().pipe(Rx.filter((s: any) => s.isSynced))
-  );
+  // Use waitForSyncedState instead of Rx observable to avoid missing the sync event
+  const state = await walletCtx.wallet.waitForSyncedState();
 
   const walletProvider = {
     getCoinPublicKey: () => (state as any).shielded.coinPublicKey.toHexString(),

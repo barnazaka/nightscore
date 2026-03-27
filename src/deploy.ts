@@ -2,22 +2,58 @@ import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import * as Rx from 'rxjs';
 import { Buffer } from 'buffer';
 import { deployContract } from '@midnight-ntwrk/midnight-js-contracts';
 import { toHex } from '@midnight-ntwrk/midnight-js-utils';
 import { unshieldedToken } from '@midnight-ntwrk/ledger-v8';
 import { generateRandomSeed } from '@midnight-ntwrk/wallet-sdk-hd';
+import * as Rx from 'rxjs';
 import {
   createWallet,
   createProviders,
   loadContract,
-  zkConfigPath
+  zkConfigPath,
 } from './utils.js';
+
+async function waitForSync(wallet: any, label: string): Promise<any> {
+  console.log(`  Waiting for ${label} to sync (this can take 2-5 minutes for a new wallet)...`);
+  
+  let lastLog = Date.now();
+  
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error('Wallet sync timed out after 10 minutes. Check your internet connection and try again.'));
+    }, 10 * 60 * 1000);
+
+    wallet.state().pipe(
+      Rx.tap((s: any) => {
+        // Log progress every 15 seconds so you know it's still working
+        if (Date.now() - lastLog > 15000) {
+          const shielded = s.shielded?.state?.progress;
+          const dust = s.dust?.state?.progress;
+          const unshielded = s.unshielded?.progress;
+          console.log(`  Still syncing... shielded: ${shielded?.isStrictlyComplete?.() ? 'done' : 'syncing'} | dust: ${dust?.isStrictlyComplete?.() ? 'done' : 'syncing'} | unshielded: ${unshielded?.isStrictlyComplete?.() ? 'done' : 'syncing'}`);
+          lastLog = Date.now();
+        }
+      }),
+      Rx.filter((s: any) => s.isSynced),
+      Rx.take(1),
+    ).subscribe({
+      next: (s) => {
+        clearTimeout(timeout);
+        resolve(s);
+      },
+      error: (e) => {
+        clearTimeout(timeout);
+        reject(e);
+      },
+    });
+  });
+}
 
 async function main() {
   console.log('\n╔══════════════════════════════════════════════════════════╗');
-  console.log('║        Deploy NightScore to Midnight Preview             ║');
+  console.log('║        Deploy NightScore to Midnight Preprod             ║');
   console.log('╚══════════════════════════════════════════════════════════╝\n');
 
   if (!fs.existsSync(path.join(zkConfigPath, 'contract', 'index.js'))) {
@@ -30,11 +66,11 @@ async function main() {
   try {
     console.log('─── Step 1: Wallet Setup ──────────────────────────────────────\n');
     const choice = await rl.question('  [1] Create new wallet\n  [2] Restore from seed\n  > ');
-    
-    // Generate a new seed or use provided one
-    const seed = choice.trim() === '2'
-      ? await rl.question('\n  Enter your 64-character seed: ')
-      : toHex(Buffer.from(generateRandomSeed()));
+
+    const seed =
+      choice.trim() === '2'
+        ? await rl.question('\n  Enter your 64-character seed: ')
+        : toHex(Buffer.from(generateRandomSeed()));
 
     if (choice.trim() !== '2') {
       console.log(`\n  ⚠️  SAVE THIS SEED (Required for interactions):\n  ${seed}\n`);
@@ -42,45 +78,39 @@ async function main() {
 
     console.log('  Creating wallet...');
     const walletCtx = await createWallet(seed);
-    
-    console.log('  Syncing with Preview network...');
-    const state = await Rx.firstValueFrom(
-      walletCtx.wallet.state().pipe(
-        Rx.throttleTime(5000),
-        Rx.filter((s: any) => s.isSynced)
-      )
-    );
+
+    const state = await waitForSync(walletCtx.wallet, 'Preprod');
 
     const address = walletCtx.unshieldedKeystore.getBech32Address();
     const balance = (state as any).unshielded.balances[unshieldedToken().raw] ?? 0n;
-    
-    console.log(`\n  Wallet Address: ${address}`);
+
+    console.log(`\n  ✅ Synced!`);
+    console.log(`  Wallet Address: ${address}`);
     console.log(`  Balance: ${balance.toLocaleString()} tNight\n`);
 
-    if (balance === 0n) {
+    if ((balance as bigint) === 0n) {
       console.log('─── Step 2: Fund Your Wallet ──────────────────────────────────\n');
-      // Updated to Preview Faucet
-      console.log('  Visit: https://faucet.preview.midnight.network/');
-      console.log(`  Address: ${address}\n`);
-      console.log('  Waiting for funds (this may take a minute)...');
-      
-      await Rx.firstValueFrom(
-        walletCtx.wallet.state().pipe(
-          Rx.throttleTime(10000),
-          Rx.filter((s: any) => s.isSynced),
-          Rx.map((s: any) => s.unshielded.balances[unshieldedToken().raw] ?? 0n),
-          Rx.filter((b) => (b as bigint) > 0n),
-        ),
-      );
-      console.log('  Funds received!\n');
+      console.log('  Visit: https://faucet.preprod.midnight.network/');
+      console.log(`  Paste this address: ${address}\n`);
+      console.log('  Waiting for funds to arrive...');
+
+      let funded = false;
+      while (!funded) {
+        await new Promise((r) => setTimeout(r, 10000));
+        const s = await waitForSync(walletCtx.wallet, 'balance update');
+        const b = (s as any).unshielded.balances[unshieldedToken().raw] ?? 0n;
+        if ((b as bigint) > 0n) {
+          funded = true;
+          console.log(`  Funds received: ${b.toLocaleString()} tNight\n`);
+        } else {
+          console.log('  No funds yet, checking again in 10 seconds...');
+        }
+      }
     }
 
     console.log('─── Step 3: DUST Token Setup ──────────────────────────────────\n');
-    const dustState = await Rx.firstValueFrom(
-      walletCtx.wallet.state().pipe(Rx.filter((s: any) => s.isSynced))
-    );
-    
-    // Check if DUST is needed for shielded transactions
+    const dustState = await waitForSync(walletCtx.wallet, 'DUST');
+
     if ((dustState as any).dust.walletBalance(new Date()) === 0n) {
       const nightUtxos = (dustState as any).unshielded.availableCoins.filter(
         (c: any) => !c.meta?.registeredForDustGeneration
@@ -91,21 +121,33 @@ async function main() {
         const recipe = await walletCtx.wallet.registerNightUtxosForDustGeneration(
           nightUtxos,
           walletCtx.unshieldedKeystore.getPublicKey(),
-          (payload: any) => walletCtx.unshieldedKeystore.signData(payload),
+          (payload: any) => walletCtx.unshieldedKeystore.signData(payload)
         );
         await walletCtx.wallet.submitTransaction(
           await walletCtx.wallet.finalizeRecipe(recipe)
         );
+        console.log('  Registered. Waiting for DUST to be minted...');
+      } else {
+        console.log('  No UTXOs available for DUST registration yet.');
+        console.log('  Make sure your wallet has tNight balance first.');
       }
-      
-      console.log('  Waiting for DUST tokens to be minted...');
-      await Rx.firstValueFrom(
-        walletCtx.wallet.state().pipe(
-          Rx.throttleTime(5000),
-          Rx.filter((s: any) => s.isSynced),
-          Rx.filter((s: any) => (s as any).dust.walletBalance(new Date()) > 0n)
-        ),
-      );
+
+      let hasDust = false;
+      let dustAttempts = 0;
+      while (!hasDust && dustAttempts < 30) {
+        await new Promise((r) => setTimeout(r, 10000));
+        const s = await waitForSync(walletCtx.wallet, 'DUST balance');
+        if ((s as any).dust.walletBalance(new Date()) > 0n) {
+          hasDust = true;
+        } else {
+          dustAttempts++;
+          console.log(`  Still waiting for DUST... (attempt ${dustAttempts}/30)`);
+        }
+      }
+
+      if (!hasDust) {
+        throw new Error('DUST tokens never arrived. Try again later.');
+      }
     }
     console.log('  DUST tokens ready!\n');
 
@@ -114,27 +156,36 @@ async function main() {
     const { compiledContract } = await loadContract();
 
     console.log('  Submitting deployment transaction...');
+    console.log('  (ZK proof generation takes 30-60 seconds, please wait)\n');
+
     const deployed = await deployContract(providers, {
       compiledContract,
       privateStateId: 'nightscoreState',
       initialPrivateState: {},
-      args: []
+      args: [],
     } as any);
 
     const contractAddress = (deployed as any).deployTxData.public.contractAddress;
-    console.log(`\n  ✅ Contract successfully deployed!`);
+    console.log('\n  ✅ Contract successfully deployed!');
     console.log(`  📍 Address: ${contractAddress}\n`);
 
-    // Save deployment info for use in interact.ts
-    fs.writeFileSync('deployment.json', JSON.stringify({ 
-      contractAddress, 
-      seed, 
-      network: 'preview',
-      deployedAt: new Date().toISOString()
-    }, null, 2));
+    fs.writeFileSync(
+      'deployment.json',
+      JSON.stringify(
+        {
+          contractAddress,
+          seed,
+          network: 'preprod',
+          deployedAt: new Date().toISOString(),
+        },
+        null,
+        2
+      )
+    );
+    console.log('  Saved to deployment.json');
+    console.log('  Run npm run interact to register a credit score.\n');
 
     await walletCtx.wallet.stop();
-    console.log('  Wallet stopped. Deployment complete.');
   } catch (error) {
     console.error('\n  ❌ Deployment failed:');
     console.error(error);
