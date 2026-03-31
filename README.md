@@ -1,4 +1,4 @@
-# NightScore Credit Oracle 0000000000
+# NightScore Credit Oracle 000000000
 
 Privacy-preserving credit attestation on the Midnight Network.
 
