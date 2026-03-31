@@ -1,4 +1,4 @@
-# NightScore Credit Oracle 0
+# NightScore Credit Oracle 
 
 Privacy-preserving credit attestation on the Midnight Network.
 
